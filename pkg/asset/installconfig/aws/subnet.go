@@ -1,5 +1,7 @@
 package aws
 
+// in pkg/asset/installconfig/aws
+
 import (
 	"context"
 	"fmt"
@@ -110,7 +112,7 @@ func subnets(ctx context.Context, session *session.Session, region string, ids [
 			return vpc, nil, nil, errors.Errorf("failed to find %s", id)
 		}
 
-		isPublic, err := isSubnetPublic(routeTables, id)
+		isPublic, err := isSubnetPublic(routeTables, id, client)
 		if err != nil {
 			return vpc, nil, nil, err
 		}
@@ -134,7 +136,7 @@ func subnets(ctx context.Context, session *session.Session, region string, ids [
 }
 
 // https://github.com/kubernetes/kubernetes/blob/9f036cd43d35a9c41d7ac4ca82398a6d0bef957b/staging/src/k8s.io/legacy-cloud-providers/aws/aws.go#L3376-L3419
-func isSubnetPublic(rt []*ec2.RouteTable, subnetID string) (bool, error) {
+func isSubnetPublic(rt []*ec2.RouteTable, subnetID string, client *ec2.EC2) (bool, error) {
 	var subnetTable *ec2.RouteTable
 	for _, table := range rt {
 		for _, assoc := range table.Associations {
@@ -175,6 +177,32 @@ func isSubnetPublic(rt []*ec2.RouteTable, subnetID string) (bool, error) {
 			return true, nil
 		}
 	}
+
+	// In some scenarios a customer may not have the internet gateway attached to the public subnets.
+	// Particularly if they are using an AWS Network Firewall with a firewall subnet.  In this scenario
+	// the internet gateway is routed through the firewall subnet.  Another way to determine which subnets
+	// are public is to check if there's a public NAT gateway.
+	logrus.Debugf("Searching for public NAT gateways in subnet ID %s\n", subnetID)
+	filter := make([]*ec2.Filter, 1)
+	subnetIDArray := make([]*string, 1)
+	subnetIDArray[0] = &subnetID
+	subnetIDName := "subnet-id"
+	filterValue := new(ec2.Filter)
+	filterValue.Name = &subnetIDName
+	filterValue.Values = subnetIDArray
+	filter[0] = filterValue
+	gatewaysOutput, err := client.DescribeNatGateways(&ec2.DescribeNatGatewaysInput{Filter: filter})
+	if err != nil {
+		return false, errors.Wrap(err, "describing NAT gateways")
+	}
+
+	for _, natgw := range gatewaysOutput.NatGateways {
+		logrus.Debugf("public NAT gateway found for subnet ID %s\n", subnetID)
+		if aws.StringValue(natgw.ConnectivityType) == "public" {
+			return true, nil
+		}
+	}
+	logrus.Debugf("public NAT gateway NOT found for subnet ID %s\n", subnetID)
 
 	return false, nil
 }

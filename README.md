@@ -1,5 +1,21 @@
 # OpenShift Installer
 
+## Changes
+
+modified file ```pkg/asset/installconfig/aws/subnet.go``` to better check which are the public/private subnets.
+In some scenarios a customer may not have the internet gateway attached to the public subnets.  Particularly if 
+they are using an AWS Network Firewall with a firewall subnet.  In this scenario the internet gateway is routed 
+through the firewall subnet.  A good way to determine which subnets are public is to check if there's a public 
+NAT gateway in the subnet.
+
+modified file ```pkg/asset/releaseimage/default.go``` to point to a verified quay.io release image for OpenShift 4.12.1.
+
+Then build the `openshift-install` binary with:
+
+```sh
+hack/build.sh
+```
+
 ## Supported Platforms
 
 * [AWS](docs/user/aws/README.md)

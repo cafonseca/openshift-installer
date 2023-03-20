@@ -1,5 +1,7 @@
 package releaseimage
 
+// In pkg/asset/releaseimage
+
 import (
 	"fmt"
 	"strings"
@@ -20,7 +22,8 @@ import (
 
 var (
 	// defaultReleaseImageOriginal is the value served when defaultReleaseImagePadded is unmodified.
-	defaultReleaseImageOriginal = "registry.ci.openshift.org/origin/release:4.12"
+	//defaultReleaseImageOriginal = "registry.ci.openshift.org/origin/release:4.12"
+	defaultReleaseImageOriginal = "quay.io/openshift-release-dev/ocp-release@sha256:a4838c937bbf0902a836107476f6167e47b0340b2ad2444937c69a0a8409f896"
 	// defaultReleaseImagePadded may be replaced in the binary with a pull spec that overrides defaultReleaseImage as
 	// a null-terminated string within the allowed character length. This allows a distributor to override the payload
 	// location without having to rebuild the source.
