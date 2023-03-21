@@ -184,12 +184,12 @@ func isSubnetPublic(rt []*ec2.RouteTable, subnetID string, client *ec2.EC2) (boo
 	// are public is to check if there's a public NAT gateway.
 	logrus.Debugf("Searching for public NAT gateways in subnet ID %s\n", subnetID)
 	filter := make([]*ec2.Filter, 1)
-	subnetIDArray := make([]*string, 1)
-	subnetIDArray[0] = &subnetID
-	subnetIDName := "subnet-id"
 	filterValue := new(ec2.Filter)
-	filterValue.Name = &subnetIDName
-	filterValue.Values = subnetIDArray
+	name := "subnet-id"
+	filterValue.Name = &name
+	value := make([]*string, 1)
+	value[0] = &subnetID
+	filterValue.Values = value
 	filter[0] = filterValue
 	gatewaysOutput, err := client.DescribeNatGateways(&ec2.DescribeNatGatewaysInput{Filter: filter})
 	if err != nil {
